@@ -121,8 +121,12 @@ def is_broadcastable(shp1, shp2):
    return True
 
 def fast_axis_of(xforms):
-   return np.stack((xforms[..., 2, 1] - xforms[..., 1, 2], xforms[..., 0, 2] - xforms[..., 2, 0],
-                    xforms[..., 1, 0] - xforms[..., 0, 1], np.zeros(xforms.shape[:-2])), axis=-1)
+   return np.stack((
+      xforms[..., 2, 1] - xforms[..., 1, 2],
+      xforms[..., 0, 2] - xforms[..., 2, 0],
+      xforms[..., 1, 0] - xforms[..., 0, 1],
+      np.zeros(xforms.shape[:-2]),
+   ), axis=-1)
 
 def is_homog_xform(xforms):
    return ((xforms.shape[-2:] == (4, 4)) and (np.allclose(1, np.linalg.det(xforms[..., :3, :3])))
@@ -230,7 +234,9 @@ def hpoint(point):
 
 def hvec(vec):
    vec = np.asanyarray(vec)
-   if vec.shape[-1] == 4: return vec
+   if vec.shape[-1] == 4:
+      vec[..., 3] = 0
+      return vec
    elif vec.shape[-1] == 3:
       r = np.zeros(vec.shape[:-1] + (4, ))
       r[..., :3] = vec
@@ -295,7 +301,9 @@ def hnormalized(a):
    if (not a.shape and len(a) == 3) or (a.shape and a.shape[-1] == 3):
       a, tmp = np.zeros(a.shape[:-1] + (4, )), a
       a[..., :3] = tmp
-   return a / hnorm(a)[..., None]
+   a2 = a.copy()
+   a2[..., 3] = 0
+   return a2 / hnorm(a2)[..., None]
 
 def is_valid_rays(r):
    r = np.asanyarray(r)
@@ -357,8 +365,17 @@ def rand_xform_aac(shape=(), axis=None, ang=None, cen=None):
       ang = np.random.rand(*shape) * np.pi  # todo: make uniform!
    if cen is None:
       cen = rand_point(shape)
-   q = rand_quat(shape)
+   # q = rand_quat(shape)
    return hrot(axis, ang, cen)
+
+def rand_xform_small(shape=(), cart_sd=1, rot_sd=1):
+   if isinstance(shape, int): shape = (shape, )
+   axis = rand_unit(shape)
+   ang = np.random.normal(0, rot_sd, shape) * np.pi
+   x = hrot(axis, ang, [0, 0, 0, 1]).squeeze()
+   trans = np.random.normal(0, cart_sd, shape + (3, ))
+   x[:3, 3] = trans
+   return x.squeeze()
 
 def rand_xform(shape=(), cart_cen=0, cart_sd=1):
    if isinstance(shape, int): shape = (shape, )
@@ -384,6 +401,11 @@ def ray_in_plane(plane, ray):
    assert ray.shape[-2:] == (4, 2)
    return (point_in_plane(plane, ray[..., :3, 0]) *
            point_in_plane(plane, ray[..., :3, 0] + ray[..., :3, 1]))
+
+def intesect_line_plane(p0, n, l0, l):
+   l = hm.hnormalized(l)
+   d = hm.hdot(p0 - l0, n) / hm.hdot(l, n)
+   return l0 + l * d
 
 def intersect_planes(plane1, plane2):
    """

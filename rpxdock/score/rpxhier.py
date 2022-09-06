@@ -76,9 +76,7 @@ class RpxHier:
 
    def score_matrix_inter(self, bodyA, bodyB, wts, symframes=[np.eye(4)], iresl=-1, **kw):
       m = np.zeros((len(bodyA), len(bodyB)), dtype='f4')
-      symframes=[np.eye(4, dtype='f4')]
-      for xsym in symframes[1:]:
-         #.astype('f4')
+      for xsym in symframes[1:].astype('f4'):
          pairs, lbub = rp.bvh.bvh_collect_pairs_vec(
             bodyA.bvh_cen,
             bodyB.bvh_cen,
@@ -114,15 +112,15 @@ class RpxHier:
 #        "pos2"_a = eye4);
 
    def scorepos(
-      self,
-      body1,
-      body2,
-      pos1,
-      pos2,
-      iresl=-1,
-      bounds=(),
-      residue_summary=np.mean,  # TODO hook up to options to select
-      **kw,
+         self,
+         body1,
+         body2,
+         pos1,
+         pos2,
+         iresl=-1,
+         bounds=(),
+         residue_summary=np.sum,  # TODO hook up to options to select
+         **kw,
    ):
       '''
       TODO WSH rearrange so ppl can add different ways of scoring
@@ -136,6 +134,7 @@ class RpxHier:
       :param kw:
       :return:
       '''
+
       kw = rp.Bunch(kw)
       pos1, pos2 = pos1.reshape(-1, 4, 4), pos2.reshape(-1, 4, 4)
       # if not bounds:
@@ -183,7 +182,6 @@ class RpxHier:
       #       assert np.all(asym_res2 >= bounds[3][i])
       #       assert np.all(asym_res2 <= bounds[4][i])
 
-      #TODO: Figure out if this should be handled in the score functions below.
       if kw.wts.rpx == 0:
          return kw.wts.ncontact * (lbub[:, 1] - lbub[:, 0]) # option to score based on ncontacts only
 
@@ -210,14 +208,18 @@ class RpxHier:
          pairs,
          pscore,
       )
-      score_functions = {"fun2" : sfx.score_fun2, "lin" : sfx.lin, "exp" : sfx.exp, "mean" : sfx.mean, "median" : sfx.median, "stnd" : sfx.stnd, "sasa_priority" : sfx.sasa_priority}
-      score_fx = score_functions.get(self.function)
 
-      if score_fx:
-         scores = score_fx(pos1, pos2, lbub, lbub1, lbub2, ressc1, ressc2, pairs=pairs, wts=kw.wts, iresl=iresl)
-      else:
-         logging.info(f"Failed to find score function {self.function}, falling back to 'stnd'")
-         scores = score_functions["stnd"](pos1, pos2, lbub, lbub1, lbub2, ressc1, ressc2, wts=kw.wts)
+      scores = np.zeros(max(len(pos1), len(pos2)))
+      for i, (lb, ub) in enumerate(lbub):
+         side1 = residue_summary(ressc1[lbub1[i, 0]:lbub1[i, 1]])
+         side2 = residue_summary(ressc2[lbub2[i, 0]:lbub2[i, 1]])
+         # TODO: maybe do this a different way?
+         mscore = side1 + side2
+         # mscore = np.sum(pscore[lb:ub])
+         # mscore = np.log(np.sum(np.exp(pscore[lb:ub])))
+         #TODO generalize scores to specify scoretypes and weights like Rosetta WHS
+         scores[i] = kw.wts.rpx * mscore + kw.wts.ncontact * (ub - lb)
+
       return scores
 
    def iresls(self):
@@ -236,11 +238,19 @@ class RpxHier:
       return self.base[x_or_k]
 
 def _check_hscore_files_aliases(alias, hscore_data_dir):
-   try:
-      pattern = os.path.join(hscore_data_dir, alias, '*.pickle')
-      g = sorted(glob.glob(pattern))
-      if len(g) > 0:
-         return g
-   except:
-      pass
-   raise ValueError(f'hscore datadir {hscore_data_dir} or alias {alias} invalid')
+   # try:
+   pattern = os.path.join(hscore_data_dir, alias, '*.pickle*')
+   g = sorted(glob.glob(pattern))
+   # check for consistency
+   for filetype in '.pickle .pickle.gz .pickle.bz2 .pickle.zip'.split():
+      if g[0].endswith(filetype):
+         log.info(f'Detected hscore files filetype: "{filetype}"')
+         for f in g:
+            assert f.endswith(
+               filetype
+            ), 'inconsistent hscore filetypes, all must be same (.gz, .bz2, .pickle, etc)'
+   if len(g) > 0: return g
+
+# except:
+#    pass
+# raise ValueError(f'hscore datadir {hscore_data_dir} or alias {alias} invalid')

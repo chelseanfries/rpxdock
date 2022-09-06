@@ -69,6 +69,30 @@ class Bunch(dict):
             newbunch.__setattr__(k, v)
       return newbunch
 
+   def visit_remove_if(self, func, recurse=True, depth=0):
+      toremove = list()
+      for k, v in self.__dict__:
+         if func(k, v, depth):
+            toremove.append(k)
+         elif isinstance(v, Bunch) and recurse:
+            v.visit_remove_if(func, recurse, depth=depth + 1)
+      for k, v in self.items():
+         if func(k, v, depth):
+            toremove.append(k)
+         elif isinstance(v, Bunch) and recurse:
+            v.visit_remove_if(func, recurse, depth=depth + 1)
+      for k in toremove:
+         self.__delattr__(k)
+
+   def __add__(self, addme):
+      newbunch = self.copy()
+      for k, v in addme.items():
+         if k in self:
+            newbunch.__setattr__(k, self[k] + v)
+         else:
+            newbunch.__setattr__(k, v)
+      return newbunch
+
    def __getstate__(self):
       return self.__dict__
 

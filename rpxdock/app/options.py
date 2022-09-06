@@ -84,32 +84,26 @@ def add_argument_unless_exists(parser, *arg, **kw):
 def default_cli_parser(parent=None, **kw):
    parser = parent if parent else argparse.ArgumentParser(allow_abbrev=False)
    addarg = add_argument_unless_exists(parser)
-   addarg("--inputs", nargs="*", type=str, default=[], help=argparse.SUPPRESS)
+   addarg("--inputs", nargs="*", type=str, default=[],
+          help='input structures for single component protocols')
    addarg(
       "--inputs1", nargs="*", type=str, default=[],
-      help='input structures for single component protocols or first component for 2+ protocols, plug input structure for plug protocol. Can be inputted as a string or list of strings'
+      help='input structures for single component protocols, plug input structure for plug protocol'
    )
    addarg(
       "--inputs2", nargs="*", type=str, default=[],
-      help='input structures for second component for 2+ component protocols, hole input structure for plug protocol. Can be inputted as a string or list of strings'
+      help='input structures for second component for 2+ component protocols, hole input structure for plug protocol'
    )
-   addarg(
-      "--inputs3", nargs="*", type=str, default=[],
-      help='input structures for third component for 3+ component protocols. Can be inputted as a string or list of strings'
-   )
-   addarg("--allowed_residues", nargs="*", type=str, default=[], help=argparse.SUPPRESS)
-   addarg(
-      "--allowed_residues1", nargs="*", type=str, default=[],
-      help='allowed residues list for single component protocols or first component of 2+ component protocols or the monomeric plug for plug protocol. Takes either nothing (if you leave them out), a single file which applies to all the corresponding inputs, or a list of files which must have the same length as the list of inputs. The files themselves must contain a whitespace separated list of either numbers or ranges.'
-   )
-   addarg(
-      "--allowed_residues2", nargs="*", type=str, default=[],
-      help='allowed residues list for second component for 2+ component protocols or the hole for the plug protocol. Takes either nothing (if you leave them out), a single file which applies to all the corresponding inputs, or a list of files which must have the same length as the list of inputs. The files themselves must contain a whitespace separated list of either numbers or ranges.'
-   )
-   addarg(
-      "--allowed_residues3", nargs="*", type=str, default=[],
-      help='allowed residues for third component for 3+ component protocols. Takes either nothing (if you leave them out), a single file which applies to all the corresponding inputs, or a list of files which must have the same length as the list of inputs. The files themselves must contain a whitespace separated list of either numbers or ranges.'
-   )
+   addarg("--inputs3", nargs="*", type=str, default=[],
+          help='input structures for third component for 3+ component protocols')
+   addarg("--allowed_residues", nargs="*", type=str, default=[],
+          help='allowed residues list for single component protocols')
+   addarg("--allowed_residues1", nargs="*", type=str, default=[],
+          help='allowed residues list for single component protocols')
+   addarg("--allowed_residues2", nargs="*", type=str, default=[],
+          help='allowed residues list for second component for 2+ component protocols')
+   addarg("--allowed_residues3", nargs="*", type=str, default=[],
+          help='allowed residues for third component for 3+ component protocols')
    addarg(
       "--ncpu", type=int, default=rp.util.cpu_count(),
       help='number of cpu cores available. defaults to all cores or cores available according to slurm allocation'
@@ -123,17 +117,17 @@ def default_cli_parser(parent=None, **kw):
       help='number of processes to use for multiprocess protocols, defaults to ncpu most of the time'
    )
    addarg("--trial_run", action="store_true", default=False,
-          help='reduce runtime by using minimal samples, smaller score files, etc.')
+          help='reduce runtime by using minimal samples, smaller score files, whatever')
    addarg(
       "--hscore_files", nargs="+", default=['ilv_h'],
-      help='rpx score files using in scoring for most protocols. defaults to pairs involving only ILV and only in helices. Can be only a path-suffix, which will be appended to --hscore_data_dir. Can be a list of files. Score files with various parameters can be generated with rpxdock/app/genrate_motif_scores.py.'
+      help='rpx score files using in scoring for most protocols. defaults to pairs involving only ILV and only in helices. Can be only a path-suffix, which will be appended to --hscore_data_dir. Can be a list of files. Score files with various parameters can be generated with rpxdock/app/generate_motif_scores.py.'
    )
    addarg(
-      "--hscore_data_dir", default='/home/sheffler/data/rpx/hscore',
+      "--hscore_data_dir", default='/home/sheffler/data/rpx/hscore/willsheffler',
       help='default path to search for hcores_files. defaults to /home/sheffler/data/rpx/hscore')
    addarg(
       "--max_trim", type=int, default=0,
-      help='maximum allowed trimming of residues from docking components. specifying 0 will completely disable trimming, and may allow significantly shorter runtimes. defaults to 0.'
+      help='maximum allowed trimming of residues from docking components. specifying 0 will completely disable trimming, and may allow significantly shorter runtimes. defaults to 100.'
    )
    addarg(
       "--trim_direction", type=str, default="NC",
@@ -168,10 +162,10 @@ def default_cli_parser(parent=None, **kw):
       help="number of hierarchical stages to do for hierarchical searches. probably use only for debugging, default is to do all stages"
    )
    addarg("--clashdis", type=float, default=3.5,
-          help='minimum distance allowed between heavy atoms. default 3.5')
+          help='minimum distance allowed between heavy atoms')
    addarg(
       "--beam_size", type=int, default=100000,
-      help='Maximum number of samples for each stage of a hierarchical search protocol (except the first, coarsest stage, which must sample all available positions. This is the most important parameter for determining rumtime (aside from number of allowed residues list). defaults to 100,000'
+      help='Maximum number of samples for each stage of a hierarchical search protocol (except the first, coarsest stage, which must sample all available positions. This is the most important parameter for determining rumtime (aside from number of allowed residues list). defaults to 50,000'
    )
    addarg(
       "--max_bb_redundancy", type=float, default=3.0,
@@ -187,7 +181,7 @@ def default_cli_parser(parent=None, **kw):
    )
    addarg(
       "--max_delta_h", type=float, default=9999,
-      help='maximum difference between cartesian component offsets for multicomponent symmetry axis aligned docking like cages and layers.'
+      help='maximum diffenence between cartesian component offsets for multicomponent symmetry axis aligned docking like cages and layers. Smaller values will '
    )
    addarg(
       "--iface_summary", default="min",
@@ -207,14 +201,6 @@ def default_cli_parser(parent=None, **kw):
       "--weight_hole", type=float, default=1.0,
       help='Only for monomer-to-plug docking. score weight of plug / cage hole interface. defaults to 1.0'
    )
-
-   addarg("--weight_sasa", type=float, default=1152,
-          help="Desired SASA used to weight dock scoring for sasa_priority scorefunction")
-   addarg(
-      "--weight_error", type=float, default=4,
-      help="Standard deviation used to calculate the distribution of SASA weighting for sasa_priority scorefunction"
-   )
-
    addarg(
       "--output_prefix", nargs="?", default="rpxdock", type=str,
       help="output file prefix. will output pickles for a base ResPairScore plus --hierarchy_depth hier XMaps"
@@ -240,7 +226,7 @@ def default_cli_parser(parent=None, **kw):
 
    addarg(
       "--docking_method", default='hier',
-      help='search method to use in docking. available methods may include "hier" for hierarchical search (probably best) "grid" for a flat grid search and "slide" for a lower dimension grid search using slide moves. Not all options available for all protocols (grid is not available for multicomp docking). defaults to "hier"'
+      help='search method to use in docking. available methods may include "hier" for hierarchical search (probably best) "grid" for a flat grid search and "slide" for a lower dimension grid search using slide moves. Not all options available for all protocols. defaults to "hier"'
    )
    addarg(
       "--cart_bounds", default=[], type=float, nargs='+',
@@ -254,20 +240,18 @@ def default_cli_parser(parent=None, **kw):
       "--ori_resl", default=30.0, type=float,
       help='resolution of top level orientation, sometimes ignored, and resl is taken from hscore data instead. default 30'
    )
-   addarg("--grid_resolution_cart_angstroms", type=float, default=1,
-          help='cartesian resolution in Angstroms during grid search. default 1')
-   addarg("--grid_resolution_ori_degrees", type=float, default=1,
-          help='rotation orientation resolution in degrees during grid search. default 1')
+   addarg("--grid_resolution_cart_angstroms", type=float, default=1)
+   addarg("--grid_resolution_ori_degrees", type=float, default=1)
    # tcdock
    addarg(
       "--architecture", type=str, default=None,
-      help='architecture to be produced by docking. Can be cage I32, O43, T32 where larger axis of symmetry is listed first, Cx for cyclic, Dx_y for dihedral, where x is the dihedral symmetry and y is the symmetry of the scaffold, y=2 or y=x. For sliding two scaffolds into contact use AXEL_x, where x is the symmetry of the scaffold. If wanting to dock assymetrically (two scaffolds of different symmetr) use x=1. For plug protocol, can be PLUG_Cx. No default value'
+      help='architecture to be produced by docking. Can be cage I32, O43, T32 or Cx for cyclic. For plug protocol, can be PLUG_Cx. No default value'
    )
    addarg("--trimmable_components", default="ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-          help='specify which components "ABC" etc are trimmable. defaults to all components')
+          help='specify which components "ABC" etc are trimmable.')
    addarg(
       "--flip_components", nargs='+', default=[True], type=str2bool,
-      help='list of boolean value or values specifying if and which components should be allowed to flip in axis aligned docking protocols. Defaults to flipping all components'
+      help='boolean value or values specifying if components should be allowed to flip in axis aligned docking protocols'
    )
    addarg(
       "--fixed_rot", nargs='+', type=int, default=[],
@@ -276,6 +260,8 @@ def default_cli_parser(parent=None, **kw):
    addarg(
       "--fixed_trans", nargs='+', type=int, default=[],
       help='list of components (0,1,2 etc) which should be fixed from translating in hierarchical docking'
+      "--components_already_aligned_to_sym_axes", action='store_true', default=False,
+      help='use this flag if components are already aligned along the appropriate symmetry axes. If absent, components are assumed to be aligned along Z and centered on the origin'
    )
    addarg(
       "--fixed_components", nargs='+', type=int, default=[],
@@ -293,12 +279,21 @@ def default_cli_parser(parent=None, **kw):
           help='Lower bound for fixed_wiggle rotation (in degrees) Default 5.0')
    addarg("--fw_rotub", default=5.0, type=float,
           help='Upper bound for fixed_wiggle rotation (in degrees) Default 5.0')
+   addarg("--fixed_components", nargs='+', type=int, default=[],
+          help='list of components (0,1,2 etc) which should be fixed in multicomponent docking')
+
    addarg("--use_orig_coords", action='store_true', default=False,
           help='remember and output the original sidechains from the input structures')
+
    addarg("--primary_iface_cut", default=None, help='score cut for helix primary interface')
+
    addarg("--symframe_num_helix_repeats", default=10,
           help='number of helix repeat frames to dump. Default 10')
    addarg("--ignored_aas", default='CGP', help='Amino acids to ignore in scoring. Default CGP')
+          help='number of helix repeat frames to dump')
+
+   addarg("--ignored_aas", default='CGP', help='Amino acids to ignore in scoring')
+
    addarg("--score_self", action='store_true', default=False,
           help='score each interface seperately and dump in output pickle')
 
@@ -317,6 +312,9 @@ def default_cli_parser(parent=None, **kw):
 
    addarg("--output_closest_subunits", action='store_true', default=False,
           help='for two component stuff, output subunit 2 most contacting subunit 1')
+
+   addarg("--recenter_input", action='store_true', default=False,
+          help='center coorinates from pdb input files')
 
    parser.has_rpxdock_args = True
    return parser

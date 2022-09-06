@@ -28,15 +28,9 @@ REQUIRED = [
    'pytest',
    'pytest-repeat',
    'tqdm',
-   'homog',
    'cppimport',
-   'breathe',
    'cffi',
    'tabulate',
-   'sphinx>3',
-   'breathe',
-   'exhale',
-   'sphinx_rtd_theme>=0.3.1',
 ]
 
 # What packages are optional?
@@ -50,7 +44,7 @@ EXTRAS = {
 # If you do change the License, remember to change the Trove Classifier for that!
 
 here = os.path.abspath(os.path.dirname(__file__))
-os.environ["CC"] = "gcc-7"
+# os.environ["CC"] = "gcc-7"
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
@@ -139,10 +133,18 @@ setup(
       '*/*.hpp',
       '*/*.cpp',
       'data/*.pickle',
-      'data/hscore/*',
-      'data/pdb/*',
-      'sampling/data/karney/*',
+      'data/body/*.pickle',
+      'data/hscore/*/*.pickle',
+      'data/pdb/*.pdb',
+      'data/pdb/*.pdb.gz',
+      'data/pdb/*.pickle',
+      'data/pdb/*.txt',
+      'sampling/data/karney/*.gz',
+      'sampling/data/karney/license.txt',
+      'sampling/data/karney/index.dat',
       'rotamer/richardson.csv',
+      'data/example_allowed_residues.txt',
+      'data/testdata/*.pickle',
    ] + get_files('extern/**/*')),
    include_package_data=True,
    license='Apache2',

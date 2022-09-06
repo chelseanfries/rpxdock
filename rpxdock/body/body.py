@@ -20,7 +20,6 @@ class Body:
       **kw,
    ):
       kw = rpxdock.Bunch(kw)
-
       # pose stuff
       pose = source
       if isinstance(source, str):
@@ -32,10 +31,10 @@ class Body:
             pose = ros.pose_from_file(source)
             ros.assign_secstruct(pose)
       self.pdbfile = pose.pdb_info().name() if pose.pdb_info() else None
-      self.orig_anames, self.orig_coords = rp.rosetta.get_sc_coords(pose)
+      self.orig_anames, self.orig_coords = rp.rosetta.get_sc_coords(pose, **kw)
       self.seq = np.array(list(pose.sequence()))
       self.ss = np.array(list(pose.secstruct()))
-      self.coord = rp.rosetta.get_bb_coords(pose)
+      self.coord = rp.rosetta.get_bb_coords(pose, **kw)
       self.set_asym_body(pose, sym, **kw)
 
       self.label = kw.label
@@ -247,9 +246,18 @@ class Body:
    def distance_to(self, other):
       return rp.bvh.bvh_min_dist(self.bvh_bb, other.bvh_bb, self.pos, other.pos)
 
-   def positioned_coord(self, asym=False):
+   def positioned_coord(self, asym=False, pos=None):
+      pos = self.pos if pos is None else pos
+      assert pos.shape == (4, 4)
       n = len(self.coord) // self.nfold if asym else len(self.coord)
       return (self.pos @ self.coord[:n, :, :, None]).squeeze()
+
+      foo = self.coord[:n, :, :]
+      # print(pos.shape, foo.shape)
+      bar = pos @ foo
+      # print(bar.shape)
+      # assert 0
+      return bar.squeeze()
 
    def positioned_coord_atomno(self, i):
       return self.pos @ self.coord.reshape(-1, 4)[i]

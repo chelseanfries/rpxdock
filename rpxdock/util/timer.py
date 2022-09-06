@@ -22,6 +22,9 @@ class _TimerGetter:
          return self.summary(self.timer.checkpoints[name])
       raise AttributeError("Timer has no attribute named: " + name)
 
+   def __getitem__(self, name):
+      return getattr(self, name)
+
 class Timer:
    def __init__(self, name='Timer', verbose=False):
       self.name = name
@@ -83,14 +86,14 @@ class Timer:
       else:
          raise ValueError('Timer, unknown order: ' + order)
 
-   def report(self, order='longest', summary='sum', namelen=None, precision='10.5f',
-              printme=True):
+   def report(self, order='longest', summary='sum', namelen=None, precision='10.5f', printme=True,
+              scale=1.0):
       if namelen is None:
          namelen = max(len(n) for n in self.checkpoints)
       lines = [f"Times(order={order}, summary={summary}):"]
       times = self.report_dict(order=order, summary=summary)
       for cpoint, t in times.items():
-         lines.append(f'    {cpoint:>{namelen}} {t:{precision}}')
+         lines.append(f'    {cpoint:>{namelen}} {t*scale:{precision}}')
       r = os.linesep.join(lines)
       if printme: log.info(r)
       return r
@@ -103,6 +106,9 @@ class Timer:
 
    def __str__(self):
       return self.report(printme=False)
+
+   def __repr__(self):
+      return str(type(self))
 
    def merge(self, others):
       if isinstance(others, Timer): others = [others]
